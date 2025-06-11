@@ -9,20 +9,19 @@ from calc_final import find_ball, find_paddle, mirror_bounce, BBOX
 
 #── 1) Calibration & constants ──────────────────────────────────────────────
 TL_x, TL_y = BBOX["left"], BBOX["top"]
-play_w  = BBOX["width"]
-play_h  = BBOX["height"]
+play_w, play_h = BBOX["width"], BBOX["height"]
 
 # sampling
-SAMPLES     = 10
-SAMPLE_DT   = 0.0025  # sec
+SAMPLES   = 10
+SAMPLE_DT = 0.0025  # sec
 
 # ball radius → adjusted bounce
 BALL_RADIUS = 14.8
 LEFT_BOUND  = BALL_RADIUS
 RIGHT_BOUND = play_w - BALL_RADIUS
 
-# ground line 40px above paddle
-GROUND_OFF  = 40
+# ground line: 40px above paddle
+GROUND_OFF = 40
 
 # colors (BGR)
 RED     = (0,   0, 255)
@@ -50,7 +49,7 @@ def mirror_bounce_adj(x):
 
 #── 2) Instruction window ───────────────────────────────────────────────────
 cv2.namedWindow("Press P to Trigger", cv2.WINDOW_NORMAL)
-instr = np.zeros((100,400,3),dtype=np.uint8)
+instr = np.zeros((100,400,3), dtype=np.uint8)
 cv2.putText(instr,
             "Press 'P' to start ↓-band detection",
             (10,60),
@@ -111,46 +110,56 @@ try:
             for x, y in traj:
                 cv2.circle(disp, (int(x), int(y)), 3, RED, -1)
 
-            # compute and draw bounce prediction (neon)
+            # compute and draw bounce prediction (neon),
+            # now targeting ground_y instead of paddle_y
             x0, y0 = traj[-2]
             x1, y1 = traj[-1]
             vel = np.array([x1 - x0, y1 - y0], float)
             pos = np.array([x1, y1], float)
             segs = []
+
             while vel[1] > 0:
-                t_p = (paddle_y - pos[1]) / vel[1]
+                # time to hit the slider-top (ground_y)
+                t_s = (ground_y - pos[1]) / vel[1]
                 if vel[0] > 0:
                     t_w = (w - pos[0]) / vel[0]
-                    wall_x = w
                 else:
                     t_w = (0 - pos[0]) / vel[0]
-                    wall_x = 0
 
-                if 0 <= t_p <= t_w:
-                    end = pos + vel * t_p
+                # if the slider‐hit comes before any wall‐hit, we're done
+                if 0 <= t_s <= t_w:
+                    end = pos + vel * t_s
                     segs.append((pos.copy(), end.copy()))
                     break
+
+                # no valid slider‐hit, and if wall‐hit is negative → abort
                 if t_w < 0:
                     break
 
+                # bounce off wall
                 hit = pos + vel * t_w
                 segs.append((pos.copy(), hit.copy()))
                 vel[0] *= -1
                 pos = hit
 
+            # draw neon‐prediction segments
             for a, b in segs:
-                cv2.line(disp,
-                         tuple(map(int, a)),
-                         tuple(map(int, b)),
-                         NEON, 2, cv2.LINE_AA)
+                cv2.line(
+                    disp,
+                    tuple(map(int, a)),
+                    tuple(map(int, b)),
+                    NEON, 2, cv2.LINE_AA
+                )
 
-            # draw ground line + magenta landing dot
-            if not segs:
-                # mirror_bounce(x0, y0, paddle_y) → your pre-written bounce logic
-                final_x = mirror_bounce((x1, y1), paddle_y)
-            else:
-                final_x = int(segs[-1][1][0])
+            # draw slider‐top line + magenta landing dot
             cv2.line(disp, (0, int(ground_y)), (w, int(ground_y)), BLACK, 2)
+
+            if segs:
+                final_x = int(segs[-1][1][0])
+            else:
+                # fallback to analytic mirror_bounce targeting ground_y
+                final_x = int(mirror_bounce((x1, y1), ground_y))
+
             cv2.circle(disp, (final_x, int(ground_y)), 6, MAGENTA, -1)
 
             cv2.putText(disp,
