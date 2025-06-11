@@ -60,7 +60,7 @@ print("Esc to quit.")
 
 try:
     while True:
-        cv2.imshow("Press P to Trigger", instr)
+        cv2.imshow("Magent targter", instr)
         key = cv2.waitKey(30) & 0xFF
 
         if key == 27:  # Esc to exit
@@ -161,6 +161,7 @@ try:
                 final_x = int(mirror_bounce((x1, y1), ground_y))
 
             cv2.circle(disp, (final_x, int(ground_y)), 6, MAGENTA, -1)
+            print(f"Magenta dot at X={final_x}, Y={int(ground_y)}")
 
             cv2.putText(disp,
                         f"Land X={final_x}",
