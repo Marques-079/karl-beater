@@ -1,4 +1,5 @@
 import mss, numpy as np, time
+import cv2
 
 TL_x, TL_y = 19 + 14.8,  185
 BR_x, BR_y = 335 - 14.8 , 750
@@ -61,12 +62,25 @@ def grab_raw():
     return np.array(sct.grab(BBOX))
 
 def find_ball(raw):
-    bgr = raw[:,:,:3].astype(int)
-    diff = np.abs(bgr - TARGET_BALL_BGR[None,None,:])
-    mask = np.all(diff <= BALL_TOL[None,None,:], axis=2)
+    """
+    Return the (x,y) centroid of all pixels matching your red emoji.
+    If none found, show the raw frame and return (None, None).
+    """
+    bgr = raw[:, :, :3].astype(int)
+    diff = np.abs(bgr - TARGET_BALL_BGR[None, None, :])    # (h,w,3)
+    mask = np.all(diff <= BALL_TOL[None, None, :], axis=2)  # (h,w)
     ys, xs = np.where(mask)
-    if xs.size==0:
-        raise RuntimeError("Ball not found")
+
+    '''
+    if xs.size == 0:
+        print("⚠️  Ball not found! Showing raw frame for inspection.")
+        # show raw (drop alpha)
+        cv2.imshow("Raw Ball Frame", raw[:, :, :3])
+        cv2.waitKey(0)               # wait until any key
+        cv2.destroyWindow("Raw Ball Frame")
+        return None, None
+    '''
+    # otherwise return the centroid
     return xs.mean(), ys.mean()
 
 def find_paddle(raw):
