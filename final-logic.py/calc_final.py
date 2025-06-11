@@ -1,6 +1,9 @@
 import mss, numpy as np, time
 import cv2
 
+import sys
+from PIL import Image
+
 TL_x, TL_y = 19 + 14.8,  185
 BR_x, BR_y = 335 - 14.8 , 750
 
@@ -84,14 +87,31 @@ def find_ball(raw):
     return xs.mean(), ys.mean()
 
 def find_paddle(raw):
-    bgr = raw[:,:,:3]
-    strip = bgr[-30:,:,:]
-    mask  = np.all(strip <= PADDLE_MAX_BGR[None,None,:], axis=2)
+    """
+    raw:   H×W×3 BGR or H×W×4 BGRA frame from grab_raw()
+    returns: (cx, cy) float center‐coordinates of the black paddle
+    raises RuntimeError if nothing black is found
+    """
+    # 1) drop alpha if present
+    bgr = raw[..., :3] if raw.ndim==3 and raw.shape[2]==4 else raw
+    h, w = bgr.shape[:2]
+
+    # 2) look only in the bottom 30px (where the paddle lives)
+    strip = bgr[h-200:h, :, :]
+
+    # 3) threshold for “black” ±5% (i.e. pixel ≤ 12)
+    thr = int(255 * 0.05)
+    mask = np.all(strip <= thr, axis=2)
+
+    # 4) collect all black‐ish pixels
     ys, xs = np.where(mask)
-    if xs.size==0:
+    if xs.size == 0:
         raise RuntimeError("Paddle not found")
-    y_full = raw.shape[0] - 30 + ys.mean()
-    return xs.mean(), y_full
+
+    # 5) compute their centroid, offsetting y back into full‐frame coords
+    cx = xs.mean()
+    cy = (h - 30) + ys.mean()
+    return cx, cy
 
 def mirror_bounce(x):
     period = 2*play_w
