@@ -1,0 +1,9 @@
+#Mouse @ 29 182    TOP LEFT
+#Mouse @ 663 187   TOP RIGHT
+#Mouse @ 663 1545  BOTTOM RIGHT
+#Mouse @ 23 1529   BOTTOM LEFT
+
+#Mouse @ 29 173   TOP LEFT
+#Mouse @ 668 183    TOP RIGHT
+#Mouse @ 671 1543   BOTTOM RIGHT
+#Mouse @ 27 1531   BOTTOM LEFT
