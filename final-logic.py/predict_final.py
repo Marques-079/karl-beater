@@ -9,7 +9,7 @@ from calc_final import find_ball, find_paddle, mirror_bounce, BBOX
 play_w, play_h = BBOX["width"], BBOX["height"]
 
 SAMPLES = 10            # samples for trajectory fit
-SAMPLE_DT = 0.0025      # sec between samples
+SAMPLE_DT = 0.00      # sec between samples
 
 BALL_RADIUS = 14.8
 LEFT_BOUND = BALL_RADIUS

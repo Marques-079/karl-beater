@@ -7,21 +7,22 @@ import pyautogui
 from calc_final import find_ball, find_paddle, mirror_bounce, BBOX
 
 # ── Calibration & constants ────────────────────────────────────────────────
-last_move, rebound = None, 1
+last_move, rebound, contacts = None, 1, 0
 play_w, play_h    = BBOX["width"], BBOX["height"]
+ # samples for trajectory fit
+SAMPLE_DT = 0.000000001  # sec between samples
+SAMPLES   = 15
 
-SAMPLES   = 10      # samples for trajectory fit
-SAMPLE_DT = 0.0025  # sec between samples
-
-BALL_RADIUS = 14.8
+BALL_RADIUS = 14.5
 LEFT_BOUND  = BALL_RADIUS
 RIGHT_BOUND = play_w - BALL_RADIUS
 
 ground_offset = 40  # slider‐top line above paddle
 
 # 65%–75% vertical band where we want to catch the ball moving down
-Y_MIN = play_h * 0.65
-Y_MAX = play_h * 0.75
+#DIMENSIONS ARE TKAN FROM TOP LEFT (POS, POS)
+Y_MIN = play_h * 0.25
+Y_MAX = play_h * 0.32
 
 sct = mss.mss()
 
@@ -61,7 +62,7 @@ try:
             screen_x = BBOX["left"] + px - 150
             screen_y = BBOX["top"]  + py - 720  # calibrated offset
 
-            pyautogui.moveTo(screen_x, screen_y, duration=0.02)
+            pyautogui.moveTo(screen_x, screen_y, duration=0.002)
             print(f"🟢 Paddle at screen X={screen_x:.1f}, screen Y={screen_y:.1f}")
             run_detection = True
 
@@ -73,24 +74,49 @@ try:
         while True:
             raw0 = grab_raw()
             bx0, by0 = find_ball(raw0)
+
+            
             if bx0 is None:
                 continue
             if prev_y is not None and by0 > prev_y and (Y_MIN <= by0 <= Y_MAX):
                 print(f"⏳ Trigger at ball ({bx0:.1f},{by0:.1f})")
                 break
+
             prev_y = by0
-            time.sleep(1/60)
+        
+            #time.sleep(0.002)
 
         # ── 2) Sample a short trajectory ─────────────────────────────────
         traj = []
         last = None
-        for i in range(SAMPLES):
+
+        def contact(contacts):
+            if contacts >= 15:
+                print("Resetting contacts")
+                contacts += 1
+                return 8
+            else:
+                contacts += 1
+                return 15
+
+        print(f"This is contact number {contacts} with the ball")
+
+        for i in range(contact(contacts)):
+            #start = time.perf_counter()
             raw = grab_raw()
             last = raw
             bx, by = find_ball(raw)
+
+            #Prevent wall bad samples
+            #if bx < 50 or bx > 500 :
+            #   continue
+            #if bx > play_h * 0.80:
+            #    break
             traj.append((bx, by))
+            #end = time.perf_counter()
+            #print(f"Elapsed (high-res): {end - start:.6f} seconds")
             #print(f"  Sample {i}: ball at ({bx:.1f},{by:.1f})")
-            time.sleep(SAMPLE_DT)
+            #time.sleep(SAMPLE_DT)
 
         # ── 3a) Build bounce segments ───────────────────────────────────────
         _, paddle_y = find_paddle(last)
@@ -166,6 +192,7 @@ try:
         print(f"Relative X is : {final_x}")
         cv2.circle(disp, (final_x, int(ground_y)), 6, MAGENTA, -1) #IMPORTANT HEREEE
 
+        
         # ── 3c) Render debug text down the right margin ─────────────────────────────────
         font     = cv2.FONT_HERSHEY_SIMPLEX
         scale    = 0.5
@@ -182,17 +209,17 @@ try:
         fname = f"prediction_debug_{ts}.png"
         cv2.imwrite(fname, disp)
         print(f"Saved debug overlay → {fname}")
-
+        
         # ── 4) Finally, drag the paddle ────────────────────────────────────
     
         special_y = screen_y = BBOX["top"]  + py - 720
 
         #Calibrate 
-        final_x = (final_x / 565) * 320.2 + 14.8
+        final_x = (final_x / 565) * 318 + 14
 
         print(f'Recieved {final_x}')
         #pyautogui.moveTo(final_x, special_y)
-        pyautogui.dragTo(final_x, special_y, duration=0.05, button='left')
+        pyautogui.dragTo(final_x, special_y, duration=0.001, button='left')
 
 #FSR the 345 which is max of our pixel range in desktop is not 346 relative to the printed frame. 
 #MAKE transformation algoroth 

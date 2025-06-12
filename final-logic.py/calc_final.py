@@ -153,6 +153,6 @@ if __name__=="__main__":
                   f"Filtered vel=({vx:.1f},{vy:.1f}) → "
                   f"Land @ x={land_x} (screen {screen_x})")
 
-            time.sleep(1/30)
+            time.sleep(0.0005)
     except KeyboardInterrupt:
         print("Goodbye!")
