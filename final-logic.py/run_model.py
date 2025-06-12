@@ -21,8 +21,8 @@ ground_offset = 40  # slider‐top line above paddle
 
 # 65%–75% vertical band where we want to catch the ball moving down
 #DIMENSIONS ARE TKAN FROM TOP LEFT (POS, POS)
-Y_MIN = play_h * 0.20
-Y_MAX = play_h * 0.32
+Y_MIN = play_h * 0.15
+Y_MAX = play_h * 0.35
 
 sct = mss.mss()
 
@@ -110,7 +110,7 @@ try:
             bx, by = find_ball(raw)
 
             #Prevent wall bad samples
-            if len(traj) > 5 and (bx < 40 or bx > 510):
+            if len(traj) > 5 and (bx < 30 or bx > 490):
                break
             #if bx > play_h * 0.80:
             #    break
