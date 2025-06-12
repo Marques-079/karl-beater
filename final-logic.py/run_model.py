@@ -7,7 +7,7 @@ import pyautogui
 from calc_final import find_ball, find_paddle, mirror_bounce, BBOX
 
 # ── Calibration & constants ────────────────────────────────────────────────
-last_move, rebound, contacts = None, 1, 0
+last_move, rebound,  contacts = None, 1, 0
 play_w, play_h    = BBOX["width"], BBOX["height"]
  # samples for trajectory fit
 SAMPLE_DT = 0.000000001  # sec between samples
@@ -21,7 +21,7 @@ ground_offset = 40  # slider‐top line above paddle
 
 # 65%–75% vertical band where we want to catch the ball moving down
 #DIMENSIONS ARE TKAN FROM TOP LEFT (POS, POS)
-Y_MIN = play_h * 0.25
+Y_MIN = play_h * 0.20
 Y_MAX = play_h * 0.32
 
 sct = mss.mss()
@@ -90,9 +90,11 @@ try:
         traj = []
         last = None
 
-        def contact(contacts):
+        def contact():
+            global contacts
             if contacts >= 15:
                 print("Resetting contacts")
+                
                 contacts += 1
                 return 8
             else:
@@ -101,15 +103,15 @@ try:
 
         print(f"This is contact number {contacts} with the ball")
 
-        for i in range(contact(contacts)):
+        for i in range(contact()):
             #start = time.perf_counter()
             raw = grab_raw()
             last = raw
             bx, by = find_ball(raw)
 
             #Prevent wall bad samples
-            #if bx < 50 or bx > 500 :
-            #   continue
+            if len(traj) > 5 and (bx < 40 or bx > 510):
+               break
             #if bx > play_h * 0.80:
             #    break
             traj.append((bx, by))
