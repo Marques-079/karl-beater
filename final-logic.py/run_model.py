@@ -3,7 +3,7 @@ import mss
 import numpy as np
 import time
 import pyautogui
-
+import math
 from calc_final import find_ball, find_paddle, mirror_bounce, BBOX
 
 # ── Calibration & constants ────────────────────────────────────────────────
@@ -96,7 +96,7 @@ try:
                 print("Resetting contacts")
                 
                 contacts += 1
-                return 8
+                return 6
             else:
                 contacts += 1
                 return 15
@@ -110,7 +110,7 @@ try:
             bx, by = find_ball(raw)
 
             #Prevent wall bad samples
-            if len(traj) > 5 and (bx < 30 or bx > 490):
+            if len(traj) > 8 and (bx < 30 or bx > 490):
                break
             #if bx > play_h * 0.80:
             #    break
@@ -118,7 +118,50 @@ try:
             #end = time.perf_counter()
             #print(f"Elapsed (high-res): {end - start:.6f} seconds")
             #print(f"  Sample {i}: ball at ({bx:.1f},{by:.1f})")
-            #time.sleep(SAMPLE_DT)
+            #time.sleep(SAMPLE_DT)  
+             
+        if len(traj) >= 2:
+            # 1) compute each segment’s bearing
+            angles = []
+            for i in range(1, len(traj)):
+                dx = traj[i][0] - traj[i-1][0]
+                dy = traj[i][1] - traj[i-1][1]
+                angles.append(math.atan2(dy, dx))
+
+            # 2) find the “winning” angle by brute‐force vote
+            tol = math.radians(6)   # ±6° tolerance
+            def circ_diff(a,b):
+                return abs(((a - b) + math.pi) % (2*math.pi) - math.pi)
+
+            best_angle = None
+            best_count = 0
+            for cand in angles:
+                cnt = sum(1 for a in angles if circ_diff(a, cand) <= tol)
+                if cnt > best_count:
+                    best_count, best_angle = cnt, cand
+
+            # 3) require a strict majority
+            if best_count > len(angles)/2:
+                # build a mask of “good” segments
+                mask = [circ_diff(a, best_angle) <= tol for a in angles]
+
+                # only keep the points that participate in a “good” segment
+                keep = set()
+                for idx, ok in enumerate(mask):
+                    if ok:
+                        keep.add(idx   )   # traj[idx]
+                        keep.add(idx+1 )   # traj[idx+1]
+                kept = [traj[i] for i in sorted(keep)]
+
+                if len(kept) >= 2:
+                    print(f"✔ Majority vote: kept {len(kept)} points, dropped {len(traj)-len(kept)}")
+                    traj = kept
+                else:
+                    print("⚠ After voting too few points left; skipping filter")
+            else:
+                print(f"⚠ Only {best_count}/{len(angles)} segments agree → skipping filter")
+        else:
+            print(f"⚠ traj has only {len(traj)} points → skipping filter")
 
         # ── 3a) Build bounce segments ───────────────────────────────────────
         _, paddle_y = find_paddle(last)
@@ -221,7 +264,7 @@ try:
 
         print(f'Recieved {final_x}')
         #pyautogui.moveTo(final_x, special_y)
-        pyautogui.dragTo(final_x, special_y, duration=0.001, button='left')
+        pyautogui.dragTo(final_x, special_y, duration=0.0000001, button='left')
 
 #FSR the 345 which is max of our pixel range in desktop is not 346 relative to the printed frame. 
 #MAKE transformation algoroth 
