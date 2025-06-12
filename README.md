@@ -1,16 +1,4 @@
-# karl-beater
-Beat Karl in instagram emoji pong x breakout game
 
 
-### ▶️ Demo Video
+![Demo animation](https://github.com/Marques-079/karl-beater/blob/0f627df5fc211e1b76a1630f7c067831aecfdde6/prediction_debug_20250612_143719.png)
 
-<video
-  src="https://github.com/Marques-079/karl-beater/blob/e881422c98757b128a886f696d7d5f9e2b8a44a5/Scores1538.mp4"
-  controls
-  autoplay
-  loop
-  muted
-  width="640"
->
-  Sorry, your browser doesn’t support embedded video.
-</video>
